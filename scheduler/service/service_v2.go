@@ -302,7 +302,6 @@ func (v *V2) StatPeer(ctx context.Context, req *schedulerv2.StatPeerRequest) (*c
 		Application:         &peer.Task.Application,
 		FilteredQueryParams: peer.Task.FilteredQueryParams,
 		RequestHeader:       peer.Task.Header,
-		PieceLength:         uint64(peer.Task.PieceLength),
 		ContentLength:       uint64(peer.Task.ContentLength.Load()),
 		PieceCount:          uint32(peer.Task.TotalPieceCount.Load()),
 		SizeScope:           peer.Task.SizeScope(),
@@ -460,7 +459,6 @@ func (v *V2) StatTask(ctx context.Context, req *schedulerv2.StatTaskRequest) (*c
 		Application:         &task.Application,
 		FilteredQueryParams: task.FilteredQueryParams,
 		RequestHeader:       task.Header,
-		PieceLength:         uint64(task.PieceLength),
 		ContentLength:       uint64(task.ContentLength.Load()),
 		PieceCount:          uint32(task.TotalPieceCount.Load()),
 		SizeScope:           task.SizeScope(),
@@ -1537,7 +1535,7 @@ func (v *V2) handleResource(_ context.Context, stream schedulerv2.Scheduler_Anno
 	// Store new task or update task.
 	task, loaded := v.resource.TaskManager().Load(taskID)
 	if !loaded {
-		options := []standard.TaskOption{standard.WithPieceLength(int32(download.GetPieceLength()))}
+		options := []standard.TaskOption{}
 		if download.GetDigest() != "" {
 			d, err := digest.Parse(download.GetDigest())
 			if err != nil {
