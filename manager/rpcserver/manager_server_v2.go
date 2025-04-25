@@ -237,9 +237,9 @@ func (s *managerServerV2) UpdateSeedPeer(ctx context.Context, req *managerv2.Upd
 	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 	seedPeer := models.SeedPeer{}
 	if err := s.db.WithContext(ctx).First(&seedPeer, models.SeedPeer{
-		Hostname:          req.Hostname,
-		IP:                req.Ip,
-		Port:              req.Port,
+		Hostname: req.Hostname,
+		// IP:                req.Ip,
+		// Port:              req.Port,
 		SeedPeerClusterID: uint(req.SeedPeerClusterId),
 	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -451,9 +451,9 @@ func (s *managerServerV2) UpdateScheduler(ctx context.Context, req *managerv2.Up
 	log := logger.WithHostnameAndIP(req.Hostname, req.Ip)
 	scheduler := models.Scheduler{}
 	if err := s.db.WithContext(ctx).First(&scheduler, models.Scheduler{
-		Hostname:           req.Hostname,
-		IP:                 req.Ip,
-		Port:               req.Port,
+		Hostname: req.Hostname,
+		// IP:                 req.Ip, // k8s pods will not have stable IPs. I need it to update the existing record...
+		// Port:               req.Port, // same with port
 		SchedulerClusterID: uint(req.SchedulerClusterId),
 	}).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
