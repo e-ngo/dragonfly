@@ -61,18 +61,18 @@ type Preheat interface {
 // preheat is an implementation of Preheat.
 type preheat struct {
 	job                *internaljob.Job
+	internalJobImage   internaljob.Image
 	rootCAs            *x509.CertPool
 	insecureSkipVerify bool
-	registryTimeout    time.Duration
 }
 
 // newPreheat creates a new Preheat.
-func newPreheat(job *internaljob.Job, registryTimeout time.Duration, rootCAs *x509.CertPool, insecureSkipVerify bool) Preheat {
+func newPreheat(job *internaljob.Job, internalJobImage internaljob.Image, rootCAs *x509.CertPool, insecureSkipVerify bool) Preheat {
 	return &preheat{
 		job:                job,
+		internalJobImage:   internalJobImage,
 		rootCAs:            rootCAs,
 		insecureSkipVerify: insecureSkipVerify,
-		registryTimeout:    registryTimeout,
 	}
 }
 
@@ -85,7 +85,7 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 	defer span.End()
 
 	// Generate download files.
-	var files []internaljob.PreheatRequest
+	var files []*internaljob.PreheatRequest
 	var err error
 	switch PreheatType(json.Type) {
 	case PreheatImageType:
@@ -94,7 +94,26 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 			return nil, errors.New("invalid params: url is required")
 		}
 
-		files, err = internaljob.CreatePreheatRequestsByManifestURL(ctx, json, p.registryTimeout, p.rootCAs, p.insecureSkipVerify)
+		files, err = p.internalJobImage.CreatePreheatRequestsByManifestURL(ctx, &internaljob.ManifestRequest{
+			URL:                 json.URL,
+			PieceLength:         json.PieceLength,
+			Tag:                 json.Tag,
+			Application:         json.Application,
+			FilteredQueryParams: json.FilteredQueryParams,
+			Headers:             json.Headers,
+			Username:            json.Username,
+			Password:            json.Password,
+			Platform:            json.Platform,
+			Scope:               json.Scope,
+			IPs:                 json.IPs,
+			Percentage:          json.Percentage,
+			Count:               json.Count,
+			ConcurrentTaskCount: json.ConcurrentTaskCount,
+			ConcurrentPeerCount: json.ConcurrentPeerCount,
+			Timeout:             json.Timeout,
+			RootCAs:             p.rootCAs,
+			InsecureSkipVerify:  p.insecureSkipVerify,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +132,7 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 			certificateChain = p.rootCAs.Subjects()
 		}
 
-		files = append(files, internaljob.PreheatRequest{
+		files = append(files, &internaljob.PreheatRequest{
 			URLs:                urls,
 			PieceLength:         json.PieceLength,
 			Tag:                 json.Tag,
@@ -129,7 +148,6 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 			CertificateChain:    certificateChain,
 			InsecureSkipVerify:  p.insecureSkipVerify,
 			Timeout:             json.Timeout,
-			LoadToCache:         json.LoadToCache,
 		})
 
 	default:
@@ -146,7 +164,7 @@ func (p *preheat) CreatePreheat(ctx context.Context, schedulers []models.Schedul
 }
 
 // createGroupJob creates a group job.
-func (p *preheat) createGroupJob(ctx context.Context, files []internaljob.PreheatRequest, queues []internaljob.Queue) (*internaljob.GroupJobState, error) {
+func (p *preheat) createGroupJob(ctx context.Context, files []*internaljob.PreheatRequest, queues []internaljob.Queue) (*internaljob.GroupJobState, error) {
 	groupUUID := fmt.Sprintf("group_%s", uuid.New().String())
 	var signatures []*machineryv1tasks.Signature
 	for _, queue := range queues {
