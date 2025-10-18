@@ -1,5 +1,5 @@
 /*
- *     Copyright 2020 The Dragonfly Authors
+ *     Copyright 2025 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,7 +152,7 @@ var (
 	mockPeerID                         = idgen.PeerIDV2()
 )
 
-func TestEvaluatorBase_newEvaluatorBase(t *testing.T) {
+func TestEvaluatorDefault_newEvaluatorDefault(t *testing.T) {
 	tests := []struct {
 		name   string
 		expect func(t *testing.T, e any)
@@ -161,469 +161,575 @@ func TestEvaluatorBase_newEvaluatorBase(t *testing.T) {
 			name: "new evaluator commonv1",
 			expect: func(t *testing.T, e any) {
 				assert := assert.New(t)
-				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorBase")
+				assert.Equal(reflect.TypeOf(e).Elem().Name(), "evaluatorDefault")
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			tc.expect(t, newEvaluatorBase())
+			tc.expect(t, newEvaluatorDefault())
 		})
 	}
 }
 
-func TestEvaluatorBase_EvaluateParents(t *testing.T) {
-	tests := []struct {
-		name            string
-		parents         []*standard.Peer
-		child           *standard.Peer
-		totalPieceCount uint32
-		mock            func(parent []*standard.Peer, child *standard.Peer)
-		expect          func(t *testing.T, parents []*standard.Peer)
-	}{
-		{
-			name:    "parents is empty",
-			parents: []*standard.Peer{},
-			child: standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-				standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-				standard.NewHost(
-					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type)),
-			totalPieceCount: 1,
-			mock: func(parent []*standard.Peer, child *standard.Peer) {
-			},
-			expect: func(t *testing.T, parents []*standard.Peer) {
-				assert := assert.New(t)
-				assert.Equal(len(parents), 0)
-
-			},
-		},
-		{
-			name: "evaluate single parent",
-			parents: []*standard.Peer{
-				standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-					standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-					standard.NewHost(
-						mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
-						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.ProxyPort, mockRawSeedHost.Type)),
-			},
-			child: standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-				standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-				standard.NewHost(
-					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type)),
-			totalPieceCount: 1,
-			mock: func(parent []*standard.Peer, child *standard.Peer) {
-			},
-			expect: func(t *testing.T, parents []*standard.Peer) {
-				assert := assert.New(t)
-				assert.Equal(len(parents), 1)
-				assert.Equal(parents[0].Task.ID, mockTaskID)
-				assert.Equal(parents[0].Host.ID, mockRawSeedHost.ID)
-
-			},
-		},
-		{
-			name: "evaluate parents with free upload count",
-			parents: []*standard.Peer{
-				standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-					standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-					standard.NewHost(
-						mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
-						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.ProxyPort, mockRawSeedHost.Type)),
-				standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-					standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-					standard.NewHost(
-						"bar", mockRawSeedHost.IP, mockRawSeedHost.Hostname,
-						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.ProxyPort, mockRawSeedHost.Type)),
-				standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-					standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-					standard.NewHost(
-						"baz", mockRawSeedHost.IP, mockRawSeedHost.Hostname,
-						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.ProxyPort, mockRawSeedHost.Type)),
-				standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-					standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-					standard.NewHost(
-						"bac", mockRawSeedHost.IP, mockRawSeedHost.Hostname,
-						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.ProxyPort, mockRawSeedHost.Type)),
-				standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-					standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-					standard.NewHost(
-						"bae", mockRawSeedHost.IP, mockRawSeedHost.Hostname,
-						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.ProxyPort, mockRawSeedHost.Type)),
-			},
-			child: standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-				standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-				standard.NewHost(
-					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type)),
-			totalPieceCount: 1,
-			mock: func(parents []*standard.Peer, child *standard.Peer) {
-				parents[1].Host.ConcurrentUploadCount.Add(4)
-				parents[2].Host.ConcurrentUploadCount.Add(3)
-				parents[3].Host.ConcurrentUploadCount.Add(2)
-				parents[4].Host.ConcurrentUploadCount.Add(1)
-			},
-			expect: func(t *testing.T, parents []*standard.Peer) {
-				assert := assert.New(t)
-				assert.Equal(len(parents), 5)
-				assert.Equal(parents[0].Host.ID, mockRawSeedHost.ID)
-				assert.Equal(parents[1].Host.ID, "bae")
-				assert.Equal(parents[2].Host.ID, "bac")
-				assert.Equal(parents[3].Host.ID, "baz")
-				assert.Equal(parents[4].Host.ID, "bar")
-			},
-		},
-		{
-			name: "evaluate parents with pieces",
-			parents: []*standard.Peer{
-				standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-					standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-					standard.NewHost(
-						mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
-						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.ProxyPort, mockRawSeedHost.Type)),
-				standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-					standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-					standard.NewHost(
-						"bar", mockRawSeedHost.IP, mockRawSeedHost.Hostname,
-						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.ProxyPort, mockRawSeedHost.Type)),
-				standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-					standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-					standard.NewHost(
-						"baz", mockRawSeedHost.IP, mockRawSeedHost.Hostname,
-						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.ProxyPort, mockRawSeedHost.Type)),
-				standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-					standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-					standard.NewHost(
-						"bac", mockRawSeedHost.IP, mockRawSeedHost.Hostname,
-						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.ProxyPort, mockRawSeedHost.Type)),
-				standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-					standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-					standard.NewHost(
-						"bae", mockRawSeedHost.IP, mockRawSeedHost.Hostname,
-						mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.ProxyPort, mockRawSeedHost.Type)),
-			},
-			child: standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-				standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-				standard.NewHost(
-					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type)),
-			totalPieceCount: 1,
-			mock: func(parents []*standard.Peer, child *standard.Peer) {
-				parents[1].FinishedPieces.Set(0)
-				parents[2].FinishedPieces.Set(0).Set(1)
-				parents[3].FinishedPieces.Set(0).Set(1).Set(2)
-				parents[4].FinishedPieces.Set(0).Set(1).Set(2).Set(3)
-			},
-			expect: func(t *testing.T, parents []*standard.Peer) {
-				assert := assert.New(t)
-				assert.Equal(len(parents), 5)
-				assert.Equal(parents[0].Host.ID, "bae")
-				assert.Equal(parents[1].Host.ID, "bac")
-				assert.Equal(parents[2].Host.ID, "baz")
-				assert.Equal(parents[3].Host.ID, "bar")
-				assert.Equal(parents[4].Host.ID, mockRawSeedHost.ID)
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			e := newEvaluatorBase()
-			tc.mock(tc.parents, tc.child)
-			tc.expect(t, e.EvaluateParents(tc.parents, tc.child, tc.totalPieceCount))
-		})
-	}
-}
-
-func TestEvaluatorBase_evaluate(t *testing.T) {
-	tests := []struct {
-		name            string
-		parent          *standard.Peer
-		child           *standard.Peer
-		totalPieceCount uint32
-		mock            func(parent *standard.Peer, child *standard.Peer)
-		expect          func(t *testing.T, score float64)
-	}{
-		{
-			name: "evaluate parent",
-			parent: standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-				standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-				standard.NewHost(
-					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
-					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.ProxyPort, mockRawSeedHost.Type)),
-			child: standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-				standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-				standard.NewHost(
-					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type)),
-			totalPieceCount: 1,
-			mock: func(parent *standard.Peer, child *standard.Peer) {
-			},
-			expect: func(t *testing.T, score float64) {
-				assert := assert.New(t)
-				assert.Equal(score, float64(0.35))
-			},
-		},
-		{
-			name: "evaluate parent with pieces",
-			parent: standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-				standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-				standard.NewHost(
-					mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
-					mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.ProxyPort, mockRawSeedHost.Type)),
-			child: standard.NewPeer(idgen.PeerIDV1("127.0.0.1"),
-				standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest)),
-				standard.NewHost(
-					mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-					mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type)),
-			totalPieceCount: 1,
-			mock: func(parent *standard.Peer, child *standard.Peer) {
-				parent.FinishedPieces.Set(0)
-			},
-			expect: func(t *testing.T, score float64) {
-				assert := assert.New(t)
-				assert.Equal(score, float64(0.55))
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			e := newEvaluatorBase()
-			tc.mock(tc.parent, tc.child)
-			tc.expect(t, e.(*evaluatorBase).evaluateParents(tc.parent, tc.child, tc.totalPieceCount))
-		})
-	}
-}
-
-func TestEvaluatorBase_calculatePieceScore(t *testing.T) {
-	mockHost := standard.NewHost(
-		mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-		mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type)
-	mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest))
-
-	tests := []struct {
-		name            string
-		parent          *standard.Peer
-		child           *standard.Peer
-		totalPieceCount uint32
-		mock            func(parent *standard.Peer, child *standard.Peer)
-		expect          func(t *testing.T, score float64)
-	}{
-		{
-			name:            "total piece count is zero and child pieces are empty",
-			parent:          standard.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			child:           standard.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			totalPieceCount: 0,
-			mock: func(parent *standard.Peer, child *standard.Peer) {
-				parent.FinishedPieces.Set(0)
-			},
-			expect: func(t *testing.T, score float64) {
-				assert := assert.New(t)
-				assert.Equal(score, float64(1))
-			},
-		},
-		{
-			name:            "total piece count is zero and parent pieces are empty",
-			parent:          standard.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			child:           standard.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			totalPieceCount: 0,
-			mock: func(parent *standard.Peer, child *standard.Peer) {
-				child.FinishedPieces.Set(0)
-			},
-			expect: func(t *testing.T, score float64) {
-				assert := assert.New(t)
-				assert.Equal(score, float64(-1))
-			},
-		},
-		{
-			name:            "total piece count is zero and child pieces of length greater than parent pieces",
-			parent:          standard.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			child:           standard.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			totalPieceCount: 0,
-			mock: func(parent *standard.Peer, child *standard.Peer) {
-				parent.FinishedPieces.Set(0)
-				child.FinishedPieces.Set(0)
-				child.FinishedPieces.Set(1)
-			},
-			expect: func(t *testing.T, score float64) {
-				assert := assert.New(t)
-				assert.Equal(score, float64(-1))
-			},
-		},
-		{
-			name:            "total piece count is zero and child pieces of length equal than parent pieces",
-			parent:          standard.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			child:           standard.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			totalPieceCount: 0,
-			mock: func(parent *standard.Peer, child *standard.Peer) {
-				parent.FinishedPieces.Set(0)
-				child.FinishedPieces.Set(0)
-			},
-			expect: func(t *testing.T, score float64) {
-				assert := assert.New(t)
-				assert.Equal(score, float64(0))
-			},
-		},
-		{
-			name:            "total piece count is zero and parent pieces of length greater than child pieces",
-			parent:          standard.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			child:           standard.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			totalPieceCount: 0,
-			mock: func(parent *standard.Peer, child *standard.Peer) {
-				parent.FinishedPieces.Set(0)
-				parent.FinishedPieces.Set(1)
-				child.FinishedPieces.Set(0)
-			},
-			expect: func(t *testing.T, score float64) {
-				assert := assert.New(t)
-				assert.Equal(score, float64(1))
-			},
-		},
-		{
-			name:            "parent pieces are empty",
-			parent:          standard.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			child:           standard.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			totalPieceCount: 10,
-			mock:            func(parent *standard.Peer, child *standard.Peer) {},
-			expect: func(t *testing.T, score float64) {
-				assert := assert.New(t)
-				assert.Equal(score, float64(0))
-			},
-		},
-		{
-			name:            "parent pieces of length greater than zero",
-			parent:          standard.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			child:           standard.NewPeer(idgen.PeerIDV1("127.0.0.1"), mockTask, mockHost),
-			totalPieceCount: 10,
-			mock: func(parent *standard.Peer, child *standard.Peer) {
-				parent.FinishedPieces.Set(0)
-				parent.FinishedPieces.Set(1)
-			},
-			expect: func(t *testing.T, score float64) {
-				assert := assert.New(t)
-				assert.Equal(score, float64(0.2))
-			},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			e := newEvaluatorBase()
-			tc.mock(tc.parent, tc.child)
-			tc.expect(t, e.(*evaluatorBase).calculatePieceScore(tc.parent.FinishedPieces.Count(), tc.child.FinishedPieces.Count(), tc.totalPieceCount))
-		})
-	}
-}
-
-func TestEvaluatorBase_calculatehostUploadSuccessScore(t *testing.T) {
+func TestEvaluatorDefault_EvaluateParents(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(host *standard.Host)
+		mock   func(parents []*standard.Peer, child *standard.Peer)
+		expect func(t *testing.T, parents []*standard.Peer)
+	}{
+		{
+			name: "sort parents by score in descending order",
+			mock: func(parents []*standard.Peer, child *standard.Peer) {
+				parents[0].Host.Network.MaxTxBandwidth = 1000
+				parents[0].Host.TxBandwidth.Store(900)
+				parents[0].Host.Network.IDC = mockHostIDC
+				parents[0].Host.Network.Location = mockHostLocation
+
+				parents[1].Host.Network.MaxTxBandwidth = 1000
+				parents[1].Host.TxBandwidth.Store(100)
+				parents[1].Host.Network.IDC = mockHostIDC
+				parents[1].Host.Network.Location = mockHostLocation
+
+				parents[2].Host.Network.MaxTxBandwidth = 1000
+				parents[2].Host.TxBandwidth.Store(500)
+				parents[2].Host.Network.IDC = mockHostIDC
+				parents[2].Host.Network.Location = mockHostLocation
+
+				child.Host.Network.IDC = mockHostIDC
+				child.Host.Network.Location = mockHostLocation
+			},
+			expect: func(t *testing.T, parents []*standard.Peer) {
+				assert := assert.New(t)
+				assert.Equal("127.0.0.2-host2", parents[0].Host.ID)
+				assert.Equal("127.0.0.3-host3", parents[1].Host.ID)
+				assert.Equal("127.0.0.1-host1", parents[2].Host.ID)
+			},
+		},
+		{
+			name: "sort parents with IDC affinity considered",
+			mock: func(parents []*standard.Peer, child *standard.Peer) {
+				parents[0].Host.Network.MaxTxBandwidth = 1000
+				parents[0].Host.TxBandwidth.Store(500)
+				parents[0].Host.Network.IDC = mockHostIDC
+				parents[0].Host.Network.Location = mockHostLocation
+
+				parents[1].Host.Network.MaxTxBandwidth = 1000
+				parents[1].Host.TxBandwidth.Store(100)
+				parents[1].Host.Network.IDC = "idc-2"
+				parents[1].Host.Network.Location = mockHostLocation
+
+				child.Host.Network.IDC = mockHostIDC
+				child.Host.Network.Location = mockHostLocation
+			},
+			expect: func(t *testing.T, parents []*standard.Peer) {
+				assert := assert.New(t)
+				assert.Equal("127.0.0.1-host1", parents[0].Host.ID)
+				assert.Equal("127.0.0.2-host2", parents[1].Host.ID)
+				assert.Equal("127.0.0.3-host3", parents[2].Host.ID)
+			},
+		},
+		{
+			name: "sort parents with location affinity considered",
+			mock: func(parents []*standard.Peer, child *standard.Peer) {
+				parents[0].Host.Network.MaxTxBandwidth = 1000
+				parents[0].Host.TxBandwidth.Store(500)
+				parents[0].Host.Network.IDC = mockHostIDC
+				parents[0].Host.Network.Location = "country-3|province-3"
+
+				parents[1].Host.Network.MaxTxBandwidth = 1000
+				parents[1].Host.TxBandwidth.Store(500)
+				parents[1].Host.Network.IDC = mockHostIDC
+				parents[1].Host.Network.Location = "country-3|province-3|city-3"
+
+				child.Host.Network.IDC = mockHostIDC
+				child.Host.Network.Location = "country-3|province-3|city-3"
+			},
+			expect: func(t *testing.T, parents []*standard.Peer) {
+				assert := assert.New(t)
+				assert.Equal("127.0.0.2-host2", parents[0].Host.ID)
+				assert.Equal("127.0.0.1-host1", parents[1].Host.ID)
+				assert.Equal("127.0.0.3-host3", parents[2].Host.ID)
+			},
+		},
+		{
+			name: "sort parents with host type considered",
+			mock: func(parents []*standard.Peer, child *standard.Peer) {
+				parents[0].Host.Type = types.HostTypeNormal
+				parents[1].Host.Type = types.HostTypeSuperSeed
+				parents[2].Host.Type = types.HostTypeSuperSeed
+			},
+			expect: func(t *testing.T, parents []*standard.Peer) {
+				assert := assert.New(t)
+				assert.Equal("127.0.0.1-host1", parents[0].Host.ID)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest))
+			parents := []*standard.Peer{
+				standard.NewPeer(idgen.PeerIDV2(), mockTask, standard.NewHost(
+					idgen.HostIDV2("127.0.0.1", "host1", false), "127.0.0.1", "host1",
+					8003, 8001, 8004, types.HostTypeNormal)),
+				standard.NewPeer(idgen.PeerIDV2(), mockTask, standard.NewHost(
+					idgen.HostIDV2("127.0.0.2", "host2", false), "127.0.0.2", "host2",
+					8003, 8001, 8004, types.HostTypeNormal)),
+				standard.NewPeer(idgen.PeerIDV2(), mockTask, standard.NewHost(
+					idgen.HostIDV2("127.0.0.3", "host3", false), "127.0.0.3", "host3",
+					8003, 8001, 8004, types.HostTypeNormal)),
+			}
+
+			child := standard.NewPeer(mockPeerID, mockTask, standard.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type))
+
+			e := newEvaluatorDefault()
+			tc.mock(parents, child)
+			result := e.EvaluateParents(parents, child)
+			tc.expect(t, result)
+		})
+	}
+}
+
+func TestEvaluatorDefault_evaluateParents(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(parent *standard.Peer, child *standard.Peer)
 		expect func(t *testing.T, score float64)
 	}{
 		{
-			name: "UploadFailedCount is larger than UploadCount",
-			mock: func(host *standard.Host) {
-				host.UploadCount.Add(1)
-				host.UploadFailedCount.Add(2)
+			name: "perfect score with all optimal conditions",
+			mock: func(parent *standard.Peer, child *standard.Peer) {
+				parent.Host.Network.MaxTxBandwidth = 4294967296
+				parent.Host.TxBandwidth.Store(0)
+				parent.Host.UploadContentLength.Store(0)
+				parent.Host.ConcurrentUploadPieceCount.Store(0)
+				parent.Host.Network.IDC = mockHostIDC
+				parent.Host.Network.Location = "country-2|province-2|city-2"
+				parent.Host.Type = types.HostTypeSuperSeed
+				parent.FSM.SetState(standard.PeerStateRunning)
+
+				child.Host.Network.IDC = mockHostIDC
+				child.Host.Network.Location = "country-2|province-2|city-2"
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0))
+				assert.Equal(1.0, score)
 			},
 		},
 		{
-			name: "UploadFailedCount and UploadCount is zero",
-			mock: func(host *standard.Host) {
-				host.UploadCount.Add(0)
-				host.UploadFailedCount.Add(0)
+			name: "zero score with worst conditions",
+			mock: func(parent *standard.Peer, child *standard.Peer) {
+				parent.Host.Network.MaxTxBandwidth = 0
+				parent.Host.TxBandwidth.Store(0)
+				parent.Host.UploadContentLength.Store(0)
+				parent.Host.ConcurrentUploadPieceCount.Store(0)
+				parent.Host.Network.IDC = ""
+				parent.Host.Network.Location = ""
+				parent.Host.Type = types.HostTypeSuperSeed
+				parent.FSM.SetState(standard.PeerStateSucceeded)
+
+				child.Host.Network.IDC = mockHostIDC
+				child.Host.Network.Location = mockHostLocation
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(1))
+				assert.Equal(0.0, score)
 			},
 		},
 		{
-			name: "UploadCount is larger than UploadFailedCount",
-			mock: func(host *standard.Host) {
-				host.UploadCount.Add(2)
-				host.UploadFailedCount.Add(1)
+			name: "mixed score with partial matches",
+			mock: func(parent *standard.Peer, child *standard.Peer) {
+				parent.Host.Network.MaxTxBandwidth = 4294967296
+				parent.Host.TxBandwidth.Store(500)
+				parent.Host.UploadContentLength.Store(8589934592)
+				parent.Host.ConcurrentUploadPieceCount.Store(2)
+				parent.Host.Network.IDC = mockHostIDC
+				parent.Host.Network.Location = "country-1|province-1"
+				parent.Host.Type = types.HostTypeNormal
+
+				child.Host.Network.IDC = mockHostIDC
+				child.Host.Network.Location = "country-1|province-1|city-1"
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.5))
+				assert.InDelta(0.84, score, 0.01)
+			},
+		},
+		{
+			name: "seed peer in running state",
+			mock: func(parent *standard.Peer, child *standard.Peer) {
+				parent.Host.Network.MaxTxBandwidth = 4294967296
+				parent.Host.TxBandwidth.Store(4294967296)
+				parent.Host.UploadContentLength.Store(12884901888)
+				parent.Host.ConcurrentUploadPieceCount.Store(16)
+				parent.Host.Network.IDC = mockHostIDC
+				parent.Host.Network.Location = mockHostLocation
+				parent.Host.Type = types.HostTypeSuperSeed
+				parent.FSM.SetState(standard.PeerStateRunning)
+
+				child.Host.Network.IDC = mockHostIDC
+				child.Host.Network.Location = mockHostLocation
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(0.628, score)
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			host := standard.NewHost(
-				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest))
-			mockPeer := standard.NewPeer(mockPeerID, mockTask, host)
-			e := newEvaluatorBase()
-			tc.mock(host)
-			tc.expect(t, e.(*evaluatorBase).calculateParentHostUploadSuccessScore(mockPeer.Host.UploadCount.Load(), mockPeer.Host.UploadFailedCount.Load()))
+
+			parent := standard.NewPeer(idgen.PeerIDV2(), mockTask, standard.NewHost(
+				mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
+				mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.ProxyPort, mockRawSeedHost.Type))
+
+			child := standard.NewPeer(mockPeerID, mockTask, standard.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type))
+
+			e := newEvaluatorDefault()
+			tc.mock(parent, child)
+			tc.expect(t, e.(*evaluatorDefault).evaluateParents(parent, child))
 		})
 	}
 }
 
-func TestEvaluatorBase_calculateFreeUploadScore(t *testing.T) {
+func TestEvaluatorDefault_calculateLoadQualityScore(t *testing.T) {
 	tests := []struct {
 		name   string
-		mock   func(host *standard.Host, mockPeer *standard.Peer)
+		mock   func(peer *standard.Peer)
 		expect func(t *testing.T, score float64)
 	}{
 		{
-			name: "host peers is not empty",
-			mock: func(host *standard.Host, mockPeer *standard.Peer) {
-				mockPeer.Host.ConcurrentUploadCount.Add(1)
+			name: "perfect load quality score",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 4294967296
+				peer.Host.TxBandwidth.Store(0)
+				peer.Host.UploadContentLength.Store(0)
+				peer.Host.ConcurrentUploadPieceCount.Store(0)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0.995))
+				assert.Equal(1.0, score)
 			},
 		},
 		{
-			name: "host peers is empty",
-			mock: func(host *standard.Host, mockPeer *standard.Peer) {},
+			name: "zero load quality score",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 0
+				peer.Host.TxBandwidth.Store(0)
+				peer.Host.UploadContentLength.Store(0)
+				peer.Host.ConcurrentUploadPieceCount.Store(0)
+			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(1))
+				assert.Equal(0.0, score)
 			},
 		},
 		{
-			name: "freeUploadCount is empty",
-			mock: func(host *standard.Host, mockPeer *standard.Peer) {
-				mockPeer.Host.ConcurrentUploadCount.Add(host.ConcurrentUploadLimit.Load())
+			name: "high bandwidth usage",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 4294967296
+				peer.Host.TxBandwidth.Store(8589934592)
+				peer.Host.UploadContentLength.Store(0)
+				peer.Host.ConcurrentUploadPieceCount.Store(0)
 			},
 			expect: func(t *testing.T, score float64) {
 				assert := assert.New(t)
-				assert.Equal(score, float64(0))
+				assert.Equal(0.5, score)
+			},
+		},
+		{
+			name: "high upload content length",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 4294967296
+				peer.Host.TxBandwidth.Store(0)
+				peer.Host.UploadContentLength.Store(8589934592)
+				peer.Host.ConcurrentUploadPieceCount.Store(0)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.InDelta(0.91, score, 0.01)
+			},
+		},
+		{
+			name: "high concurrent upload count",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 4294967296
+				peer.Host.TxBandwidth.Store(0)
+				peer.Host.UploadContentLength.Store(0)
+				peer.Host.ConcurrentUploadPieceCount.Store(200)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.InDelta(0.83, score, 0.01)
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			host := standard.NewHost(
-				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
-				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest))
-			mockPeer := standard.NewPeer(mockPeerID, mockTask, host)
-			e := newEvaluatorBase()
-			tc.mock(host, mockPeer)
-			tc.expect(t, e.(*evaluatorBase).calculateFreeUploadScore(host))
+			peer := standard.NewPeer(mockPeerID, mockTask, standard.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type))
+
+			e := newEvaluatorDefault()
+			tc.mock(peer)
+			tc.expect(t, e.(*evaluatorDefault).calculateLoadQualityScore(peer))
 		})
 	}
 }
 
-func TestEvaluatorBase_calculateHostTypeScore(t *testing.T) {
+func TestEvaluatorDefault_calculatePeakBandwidthUsageScore(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(peer *standard.Peer)
+		expect func(t *testing.T, score float64)
+	}{
+		{
+			name: "no bandwidth usage",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 1000
+				peer.Host.TxBandwidth.Store(0)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(1.0, score)
+			},
+		},
+		{
+			name: "half bandwidth usage",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 1000
+				peer.Host.TxBandwidth.Store(500)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(0.5, score)
+			},
+		},
+		{
+			name: "full bandwidth usage",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 1000
+				peer.Host.TxBandwidth.Store(1000)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(0.0, score)
+			},
+		},
+		{
+			name: "over bandwidth capacity",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 1000
+				peer.Host.TxBandwidth.Store(1500)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(0.0, score)
+			},
+		},
+		{
+			name: "zero max bandwidth",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 0
+				peer.Host.TxBandwidth.Store(100)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(0.0, score)
+			},
+		},
+		{
+			name: "low bandwidth usage",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 1000
+				peer.Host.TxBandwidth.Store(100)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(0.9, score)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest))
+			peer := standard.NewPeer(mockPeerID, mockTask, standard.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type))
+
+			e := newEvaluatorDefault()
+			tc.mock(peer)
+			tc.expect(t, e.(*evaluatorDefault).calculatePeakBandwidthUsageScore(peer))
+		})
+	}
+}
+
+func TestEvaluatorDefault_calculateBandwidthDurationScore(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(peer *standard.Peer)
+		expect func(t *testing.T, score float64)
+	}{
+		{
+			name: "no upload content",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 1000
+				peer.Host.UploadContentLength.Store(0)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(1.0, score)
+			},
+		},
+		{
+			name: "zero max bandwidth",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 0
+				peer.Host.UploadContentLength.Store(1000)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(0.0, score)
+			},
+		},
+		{
+			name: "low upload content length",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 1000000
+				peer.Host.UploadContentLength.Store(1000)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Greater(score, 0.99)
+			},
+		},
+		{
+			name: "high upload content length",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 1000000
+				peer.Host.UploadContentLength.Store(10000000)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(0.0, score)
+			},
+		},
+		{
+			name: "medium upload content length",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 1000000
+				peer.Host.UploadContentLength.Store(3750000)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(0.5, score)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest))
+			peer := standard.NewPeer(mockPeerID, mockTask, standard.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type))
+
+			e := newEvaluatorDefault()
+			tc.mock(peer)
+			tc.expect(t, e.(*evaluatorDefault).calculateBandwidthDurationScore(peer))
+		})
+	}
+}
+
+func TestEvaluatorDefault_calculateConcurrencyScore(t *testing.T) {
+	tests := []struct {
+		name   string
+		mock   func(peer *standard.Peer)
+		expect func(t *testing.T, score float64)
+	}{
+		{
+			name: "no concurrent uploads",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 400000000
+				peer.Host.ConcurrentUploadPieceCount.Store(0)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(1.0, score)
+			},
+		},
+		{
+			name: "zero max bandwidth",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 0
+				peer.Host.ConcurrentUploadPieceCount.Store(10)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(0.0, score)
+			},
+		},
+		{
+			name: "low bandwidth with concurrent uploads",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 100000
+				peer.Host.ConcurrentUploadPieceCount.Store(5)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(0.0, score)
+			},
+		},
+		{
+			name: "high bandwidth with low concurrent uploads",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 400000000
+				peer.Host.ConcurrentUploadPieceCount.Store(2)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.Equal(1.0, score)
+			},
+		},
+		{
+			name: "high bandwidth with high concurrent uploads",
+			mock: func(peer *standard.Peer) {
+				peer.Host.Network.MaxTxBandwidth = 400000000
+				peer.Host.ConcurrentUploadPieceCount.Store(10)
+			},
+			expect: func(t *testing.T, score float64) {
+				assert := assert.New(t)
+				assert.InDelta(0.29, score, 0.01)
+			},
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest))
+			peer := standard.NewPeer(mockPeerID, mockTask, standard.NewHost(
+				mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
+				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type))
+
+			e := newEvaluatorDefault()
+			tc.mock(peer)
+			tc.expect(t, e.(*evaluatorDefault).calculateConcurrencyScore(peer))
+		})
+	}
+}
+
+func TestEvaluatorDefault_calculateHostTypeScore(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(peer *standard.Peer)
@@ -668,14 +774,14 @@ func TestEvaluatorBase_calculateHostTypeScore(t *testing.T) {
 				mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type)
 			mockTask := standard.NewTask(mockTaskID, mockTaskURL, mockTaskTag, mockTaskApplication, commonv2.TaskType_STANDARD, mockTaskFilteredQueryParams, mockTaskHeader, mockTaskBackToSourceLimit, standard.WithDigest(mockTaskDigest))
 			peer := standard.NewPeer(mockPeerID, mockTask, mockHost)
-			e := newEvaluatorBase()
+			e := newEvaluatorDefault()
 			tc.mock(peer)
-			tc.expect(t, e.(*evaluatorBase).calculateHostTypeScore(peer))
+			tc.expect(t, e.(*evaluatorDefault).calculateHostTypeScore(peer))
 		})
 	}
 }
 
-func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
+func TestEvaluatorDefault_calculateIDCAffinityScore(t *testing.T) {
 	tests := []struct {
 		name   string
 		mock   func(dstHost *standard.Host, srcHost *standard.Host)
@@ -744,14 +850,14 @@ func TestEvaluatorBase_calculateIDCAffinityScore(t *testing.T) {
 			srcHost := standard.NewHost(
 				mockRawSeedHost.ID, mockRawSeedHost.IP, mockRawSeedHost.Hostname,
 				mockRawSeedHost.Port, mockRawSeedHost.DownloadPort, mockRawSeedHost.ProxyPort, mockRawSeedHost.Type)
-			e := newEvaluatorBase()
+			e := newEvaluatorDefault()
 			tc.mock(dstHost, srcHost)
-			tc.expect(t, e.(*evaluatorBase).calculateIDCAffinityScore(dstHost.Network.IDC, srcHost.Network.IDC))
+			tc.expect(t, e.(*evaluatorDefault).calculateIDCAffinityScore(dstHost.Network.IDC, srcHost.Network.IDC))
 		})
 	}
 }
 
-func TestEvaluatorBase_calculateMultiElementAffinityScore(t *testing.T) {
+func TestEvaluatorDefault_calculateLocationAffinityScore(t *testing.T) {
 	tests := []struct {
 		name   string
 		dst    string
@@ -870,13 +976,13 @@ func TestEvaluatorBase_calculateMultiElementAffinityScore(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			e := newEvaluatorBase()
-			tc.expect(t, e.(*evaluatorBase).calculateMultiElementAffinityScore(tc.dst, tc.src))
+			e := newEvaluatorDefault()
+			tc.expect(t, e.(*evaluatorDefault).calculateLocationAffinityScore(tc.dst, tc.src))
 		})
 	}
 }
 
-func TestEvaluatorBase_IsBadParent(t *testing.T) {
+func TestEvaluatorDefault_IsBadParent(t *testing.T) {
 	mockHost := standard.NewHost(
 		mockRawHost.ID, mockRawHost.IP, mockRawHost.Hostname,
 		mockRawHost.Port, mockRawHost.DownloadPort, mockRawHost.ProxyPort, mockRawHost.Type)
@@ -1041,7 +1147,7 @@ func TestEvaluatorBase_IsBadParent(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			e := newEvaluatorBase()
+			e := newEvaluatorDefault()
 			tc.mock(tc.peer)
 			tc.expect(t, e.IsBadParent(tc.peer))
 		})
