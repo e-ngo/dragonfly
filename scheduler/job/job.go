@@ -383,6 +383,9 @@ func (j *job) preheatV2SingleSeedPeerByURL(ctx context.Context, url string, req 
 			RequestHeader:       req.Headers,
 			CertificateChain:    req.CertificateChain,
 			RemoteIp:            &advertiseIP,
+			Timeout:             durationpb.New(req.Timeout),
+			ObjectStorage:       req.ObjectStorage,
+			Hdfs:                req.Hdfs,
 		}})
 	if err != nil {
 		log.Errorf("[preheat]: preheat failed: %s", err.Error())
@@ -481,6 +484,8 @@ func (j *job) PreheatAllSeedPeers(ctx context.Context, req *internaljob.PreheatR
 							Timeout:             durationpb.New(req.Timeout),
 							CertificateChain:    req.CertificateChain,
 							RemoteIp:            &advertiseIP,
+							ObjectStorage:       req.ObjectStorage,
+							Hdfs:                req.Hdfs,
 						}})
 					if err != nil {
 						log.Errorf("[preheat]: preheat failed: %s", err.Error())
@@ -698,6 +703,8 @@ func (j *job) PreheatAllPeers(ctx context.Context, req *internaljob.PreheatReque
 							Timeout:             durationpb.New(req.Timeout),
 							CertificateChain:    req.CertificateChain,
 							RemoteIp:            &advertiseIP,
+							ObjectStorage:       req.ObjectStorage,
+							Hdfs:                req.Hdfs,
 						}})
 					if err != nil {
 						log.Errorf("[preheat]: preheat failed: %s", err.Error())
@@ -1033,9 +1040,18 @@ func (j *job) deleteTask(ctx context.Context, data string) (string, error) {
 func (j *job) ListTaskEntries(ctx context.Context, req *internaljob.ListTaskEntriesRequest, log *logger.SugaredLoggerOnWith) (*internaljob.ListTaskEntriesResponse, error) {
 	advertiseIP := j.config.Server.AdvertiseIP.String()
 
-	selected, err := j.resource.SeedPeer().Select(ctx, req.TaskID)
+	// select a dfdaemon from peers or seed peers
+	var selected *resource.Host
+	peers, err := j.selectPeers([]string{}, nil, nil, log)
 	if err != nil {
-		return nil, err
+		log.Warnf("[list-task-entries] select peers failed: %s", err)
+
+		selected, err = j.resource.SeedPeer().Select(ctx, req.TaskID)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		selected = peers[0]
 	}
 
 	addr := fmt.Sprintf("%s:%d", selected.IP, selected.Port)
