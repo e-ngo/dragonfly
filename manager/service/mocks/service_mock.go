@@ -16,7 +16,6 @@ import (
 	models "d7y.io/dragonfly/v2/manager/models"
 	rbac "d7y.io/dragonfly/v2/manager/permission/rbac"
 	types "d7y.io/dragonfly/v2/manager/types"
-	objectstorage "d7y.io/dragonfly/v2/pkg/objectstorage"
 	gin "github.com/gin-gonic/gin"
 	gomock "go.uber.org/mock/gomock"
 )
@@ -144,20 +143,6 @@ func (m *MockService) CreateApplication(arg0 context.Context, arg1 types.CreateA
 func (mr *MockServiceMockRecorder) CreateApplication(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateApplication", reflect.TypeOf((*MockService)(nil).CreateApplication), arg0, arg1)
-}
-
-// CreateBucket mocks base method.
-func (m *MockService) CreateBucket(arg0 context.Context, arg1 types.CreateBucketRequest) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateBucket", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CreateBucket indicates an expected call of CreateBucket.
-func (mr *MockServiceMockRecorder) CreateBucket(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateBucket", reflect.TypeOf((*MockService)(nil).CreateBucket), arg0, arg1)
 }
 
 // CreateCluster mocks base method.
@@ -457,20 +442,6 @@ func (mr *MockServiceMockRecorder) DestroyApplication(arg0, arg1 any) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyApplication", reflect.TypeOf((*MockService)(nil).DestroyApplication), arg0, arg1)
 }
 
-// DestroyBucket mocks base method.
-func (m *MockService) DestroyBucket(arg0 context.Context, arg1 string) error {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DestroyBucket", arg0, arg1)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// DestroyBucket indicates an expected call of DestroyBucket.
-func (mr *MockServiceMockRecorder) DestroyBucket(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DestroyBucket", reflect.TypeOf((*MockService)(nil).DestroyBucket), arg0, arg1)
-}
-
 // DestroyCluster mocks base method.
 func (m *MockService) DestroyCluster(arg0 context.Context, arg1 uint) error {
 	m.ctrl.T.Helper()
@@ -685,36 +656,6 @@ func (m *MockService) GetAudits(ctx context.Context, q types.GetAuditsQuery) ([]
 func (mr *MockServiceMockRecorder) GetAudits(ctx, q any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAudits", reflect.TypeOf((*MockService)(nil).GetAudits), ctx, q)
-}
-
-// GetBucket mocks base method.
-func (m *MockService) GetBucket(arg0 context.Context, arg1 string) (*objectstorage.BucketMetadata, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBucket", arg0, arg1)
-	ret0, _ := ret[0].(*objectstorage.BucketMetadata)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetBucket indicates an expected call of GetBucket.
-func (mr *MockServiceMockRecorder) GetBucket(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBucket", reflect.TypeOf((*MockService)(nil).GetBucket), arg0, arg1)
-}
-
-// GetBuckets mocks base method.
-func (m *MockService) GetBuckets(arg0 context.Context) ([]*objectstorage.BucketMetadata, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetBuckets", arg0)
-	ret0, _ := ret[0].([]*objectstorage.BucketMetadata)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetBuckets indicates an expected call of GetBuckets.
-func (mr *MockServiceMockRecorder) GetBuckets(arg0 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBuckets", reflect.TypeOf((*MockService)(nil).GetBuckets), arg0)
 }
 
 // GetCluster mocks base method.

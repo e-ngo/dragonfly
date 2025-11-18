@@ -34,7 +34,6 @@ import (
 	"d7y.io/dragonfly/v2/manager/permission/rbac"
 	"d7y.io/dragonfly/v2/manager/types"
 	pkggc "d7y.io/dragonfly/v2/pkg/gc"
-	"d7y.io/dragonfly/v2/pkg/objectstorage"
 )
 
 type Service interface {
@@ -104,11 +103,6 @@ type Service interface {
 	GetSchedulers(context.Context, types.GetSchedulersQuery) ([]models.Scheduler, int64, error)
 	GetSchedulerFeatures(context.Context) []string
 
-	CreateBucket(context.Context, types.CreateBucketRequest) error
-	DestroyBucket(context.Context, string) error
-	GetBucket(context.Context, string) (*objectstorage.BucketMetadata, error)
-	GetBuckets(context.Context) ([]*objectstorage.BucketMetadata, error)
-
 	CreateConfig(context.Context, types.CreateConfigRequest) (*models.Config, error)
 	DestroyConfig(context.Context, uint) error
 	UpdateConfig(context.Context, uint, types.UpdateConfigRequest) (*models.Config, error)
@@ -150,26 +144,24 @@ type Service interface {
 }
 
 type service struct {
-	config        *config.Config
-	db            *gorm.DB
-	rdb           redis.UniversalClient
-	cache         *cache.Cache
-	job           *job.Job
-	gc            pkggc.GC
-	enforcer      *casbin.Enforcer
-	objectStorage objectstorage.ObjectStorage
+	config   *config.Config
+	db       *gorm.DB
+	rdb      redis.UniversalClient
+	cache    *cache.Cache
+	job      *job.Job
+	gc       pkggc.GC
+	enforcer *casbin.Enforcer
 }
 
 // NewREST returns a new REST instance
-func New(cfg *config.Config, database *database.Database, cache *cache.Cache, job *job.Job, gc pkggc.GC, enforcer *casbin.Enforcer, objectStorage objectstorage.ObjectStorage) Service {
+func New(cfg *config.Config, database *database.Database, cache *cache.Cache, job *job.Job, gc pkggc.GC, enforcer *casbin.Enforcer) Service {
 	return &service{
-		config:        cfg,
-		db:            database.DB,
-		rdb:           database.RDB,
-		cache:         cache,
-		job:           job,
-		gc:            gc,
-		enforcer:      enforcer,
-		objectStorage: objectStorage,
+		config:   cfg,
+		db:       database.DB,
+		rdb:      database.RDB,
+		cache:    cache,
+		job:      job,
+		gc:       gc,
+		enforcer: enforcer,
 	}
 }
