@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package persistentcache
+package persistent
 
 import (
 	"context"
@@ -54,7 +54,7 @@ func TestPeerManager_Load(t *testing.T) {
 			},
 			mockRedis: func(mock redismock.ClientMock) {
 				mock.ExpectHGetAll(
-					pkgredis.MakePersistentCachePeerKeyForPersistentCacheTaskInScheduler(42, "foo"),
+					pkgredis.MakePersistentCachePeerKeyForPersistentTaskInScheduler(42, "foo"),
 				).SetErr(errors.New("redis error"))
 			},
 			expectedPeer:   nil,
@@ -75,7 +75,7 @@ func TestPeerManager_Load(t *testing.T) {
 				}
 
 				mock.ExpectHGetAll(
-					pkgredis.MakePersistentCachePeerKeyForPersistentCacheTaskInScheduler(42, "nohost"),
+					pkgredis.MakePersistentCachePeerKeyForPersistentTaskInScheduler(42, "nohost"),
 				).SetVal(map[string]string{
 					"id":                     "nohost",
 					"state":                  PeerStateSucceeded,
@@ -109,7 +109,7 @@ func TestPeerManager_Load(t *testing.T) {
 				}
 
 				mock.ExpectHGetAll(
-					pkgredis.MakePersistentCachePeerKeyForPersistentCacheTaskInScheduler(42, "notask"),
+					pkgredis.MakePersistentCachePeerKeyForPersistentTaskInScheduler(42, "notask"),
 				).SetVal(map[string]string{
 					"id":                     "notask",
 					"state":                  PeerStateSucceeded,
@@ -152,7 +152,7 @@ func TestPeerManager_Load(t *testing.T) {
 					"updated_at":             time.Now().Format(time.RFC3339),
 				}
 				mock.ExpectHGetAll(
-					pkgredis.MakePersistentCachePeerKeyForPersistentCacheTaskInScheduler(42, "goodpeer"),
+					pkgredis.MakePersistentCachePeerKeyForPersistentTaskInScheduler(42, "goodpeer"),
 				).SetVal(mockData)
 			},
 			mock: func(hostManager *MockHostManager, mockHostManager *MockHostManagerMockRecorder, taskManager *MockTaskManager, mockTaskManager *MockTaskManagerMockRecorder) {
@@ -254,7 +254,7 @@ func TestPeerManager_LoadAll(t *testing.T) {
 		{
 			name: "redis scan error",
 			mockRedis: func(mock redismock.ClientMock) {
-				mock.ExpectScan(0, fmt.Sprintf("%s:*", pkgredis.MakePersistentCachePeersForPersistentCacheTaskInScheduler(42)), 10).SetErr(errors.New("redis scan error"))
+				mock.ExpectScan(0, fmt.Sprintf("%s:*", pkgredis.MakePersistentCachePeersForPersistentTaskInScheduler(42)), 10).SetErr(errors.New("redis scan error"))
 			},
 			expectedPeers: nil,
 			expectedErr:   true,
@@ -262,7 +262,7 @@ func TestPeerManager_LoadAll(t *testing.T) {
 		{
 			name: "invalid peer key",
 			mockRedis: func(mock redismock.ClientMock) {
-				mock.ExpectScan(0, fmt.Sprintf("%s:*", pkgredis.MakePersistentCachePeersForPersistentCacheTaskInScheduler(42)), 10).SetVal([]string{fmt.Sprintf("%s:", pkgredis.MakePersistentCachePeersForPersistentCacheTaskInScheduler(42))}, 0)
+				mock.ExpectScan(0, fmt.Sprintf("%s:*", pkgredis.MakePersistentCachePeersForPersistentTaskInScheduler(42)), 10).SetVal([]string{fmt.Sprintf("%s:", pkgredis.MakePersistentCachePeersForPersistentTaskInScheduler(42))}, 0)
 			},
 			expectedPeers: nil,
 			expectedErr:   false,
@@ -270,8 +270,8 @@ func TestPeerManager_LoadAll(t *testing.T) {
 		{
 			name: "load peer error",
 			mockRedis: func(mock redismock.ClientMock) {
-				mock.ExpectScan(0, fmt.Sprintf("%s:*", pkgredis.MakePersistentCachePeersForPersistentCacheTaskInScheduler(42)), 10).SetVal([]string{fmt.Sprintf("%s:peer1", pkgredis.MakePersistentCachePeersForPersistentCacheTaskInScheduler(42))}, 0)
-				mock.ExpectHGetAll(pkgredis.MakePersistentCachePeerKeyForPersistentCacheTaskInScheduler(42, "peer1")).SetErr(errors.New("redis hgetall error"))
+				mock.ExpectScan(0, fmt.Sprintf("%s:*", pkgredis.MakePersistentCachePeersForPersistentTaskInScheduler(42)), 10).SetVal([]string{fmt.Sprintf("%s:peer1", pkgredis.MakePersistentCachePeersForPersistentTaskInScheduler(42))}, 0)
+				mock.ExpectHGetAll(pkgredis.MakePersistentCachePeerKeyForPersistentTaskInScheduler(42, "peer1")).SetErr(errors.New("redis hgetall error"))
 			},
 			expectedPeers: nil,
 			expectedErr:   false,
@@ -284,8 +284,8 @@ func TestPeerManager_LoadAll(t *testing.T) {
 					t.Fatalf("failed to marshal bitset: %v", err)
 				}
 
-				mock.ExpectScan(0, fmt.Sprintf("%s:*", pkgredis.MakePersistentCachePeersForPersistentCacheTaskInScheduler(42)), 10).SetVal([]string{fmt.Sprintf("%s:peer1", pkgredis.MakePersistentCachePeersForPersistentCacheTaskInScheduler(42))}, 0)
-				mock.ExpectHGetAll(pkgredis.MakePersistentCachePeerKeyForPersistentCacheTaskInScheduler(42, "peer1")).SetVal(map[string]string{
+				mock.ExpectScan(0, fmt.Sprintf("%s:*", pkgredis.MakePersistentCachePeersForPersistentTaskInScheduler(42)), 10).SetVal([]string{fmt.Sprintf("%s:peer1", pkgredis.MakePersistentCachePeersForPersistentTaskInScheduler(42))}, 0)
+				mock.ExpectHGetAll(pkgredis.MakePersistentCachePeerKeyForPersistentTaskInScheduler(42, "peer1")).SetVal(map[string]string{
 					"id":                     "peer1",
 					"state":                  PeerStateSucceeded,
 					"persistent":             "true",
@@ -397,7 +397,7 @@ func TestPeerManager_LoadAllByTaskID(t *testing.T) {
 			},
 			mockRedis: func(mock redismock.ClientMock) {
 				mock.ExpectSMembers(
-					pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(42, "task1"),
+					pkgredis.MakePersistentCachePeersOfPersistentTaskInScheduler(42, "task1"),
 				).SetErr(errors.New("redis error"))
 			},
 			expectedPeers: nil,
@@ -410,10 +410,10 @@ func TestPeerManager_LoadAllByTaskID(t *testing.T) {
 			},
 			mockRedis: func(mock redismock.ClientMock) {
 				mock.ExpectSMembers(
-					pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(42, "task1"),
+					pkgredis.MakePersistentCachePeersOfPersistentTaskInScheduler(42, "task1"),
 				).SetVal([]string{"peer1"})
 				mock.ExpectHGetAll(
-					pkgredis.MakePersistentCachePeerKeyForPersistentCacheTaskInScheduler(42, "peer1"),
+					pkgredis.MakePersistentCachePeerKeyForPersistentTaskInScheduler(42, "peer1"),
 				).SetErr(errors.New("redis hgetall error"))
 			},
 			expectedPeers: nil,
@@ -431,10 +431,10 @@ func TestPeerManager_LoadAllByTaskID(t *testing.T) {
 				}
 
 				mock.ExpectSMembers(
-					pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(42, "task1"),
+					pkgredis.MakePersistentCachePeersOfPersistentTaskInScheduler(42, "task1"),
 				).SetVal([]string{"peer1"})
 				mock.ExpectHGetAll(
-					pkgredis.MakePersistentCachePeerKeyForPersistentCacheTaskInScheduler(42, "peer1"),
+					pkgredis.MakePersistentCachePeerKeyForPersistentTaskInScheduler(42, "peer1"),
 				).SetVal(map[string]string{
 					"id":                     "peer1",
 					"state":                  PeerStateSucceeded,
@@ -546,7 +546,7 @@ func TestPeerManager_LoadAllIDsByTaskID(t *testing.T) {
 			},
 			mockRedis: func(mock redismock.ClientMock) {
 				mock.ExpectSMembers(
-					pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(42, "task1"),
+					pkgredis.MakePersistentCachePeersOfPersistentTaskInScheduler(42, "task1"),
 				).SetErr(errors.New("redis error"))
 			},
 			expectedIDs: nil,
@@ -559,7 +559,7 @@ func TestPeerManager_LoadAllIDsByTaskID(t *testing.T) {
 			},
 			mockRedis: func(mock redismock.ClientMock) {
 				mock.ExpectSMembers(
-					pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(42, "task1"),
+					pkgredis.MakePersistentCachePeersOfPersistentTaskInScheduler(42, "task1"),
 				).SetVal([]string{"peer1", "peer2"})
 			},
 			expectedIDs: []string{"peer1", "peer2"},
@@ -624,7 +624,7 @@ func TestPeerManager_LoadPersistentAllByTaskID(t *testing.T) {
 			},
 			mockRedis: func(mock redismock.ClientMock) {
 				mock.ExpectSMembers(
-					pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(42, "task1"),
+					pkgredis.MakePersistentCachePeersOfPersistentTaskInScheduler(42, "task1"),
 				).SetErr(errors.New("redis error"))
 			},
 			expectedPeers: nil,
@@ -637,10 +637,10 @@ func TestPeerManager_LoadPersistentAllByTaskID(t *testing.T) {
 			},
 			mockRedis: func(mock redismock.ClientMock) {
 				mock.ExpectSMembers(
-					pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(42, "task1"),
+					pkgredis.MakePersistentCachePeersOfPersistentTaskInScheduler(42, "task1"),
 				).SetVal([]string{"peer1"})
 				mock.ExpectHGetAll(
-					pkgredis.MakePersistentCachePeerKeyForPersistentCacheTaskInScheduler(42, "peer1"),
+					pkgredis.MakePersistentCachePeerKeyForPersistentTaskInScheduler(42, "peer1"),
 				).SetErr(errors.New("redis hgetall error"))
 			},
 			expectedPeers: nil,
@@ -658,10 +658,10 @@ func TestPeerManager_LoadPersistentAllByTaskID(t *testing.T) {
 				}
 
 				mock.ExpectSMembers(
-					pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(42, "task1"),
+					pkgredis.MakePersistentCachePeersOfPersistentTaskInScheduler(42, "task1"),
 				).SetVal([]string{"peer1"})
 				mock.ExpectHGetAll(
-					pkgredis.MakePersistentCachePeerKeyForPersistentCacheTaskInScheduler(42, "peer1"),
+					pkgredis.MakePersistentCachePeerKeyForPersistentTaskInScheduler(42, "peer1"),
 				).SetVal(map[string]string{
 					"id":                     "peer1",
 					"state":                  PeerStateSucceeded,
@@ -773,7 +773,7 @@ func TestPeerManager_DeleteAllByTaskID(t *testing.T) {
 			},
 			mockRedis: func(mock redismock.ClientMock) {
 				mock.ExpectSMembers(
-					pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(42, "task1"),
+					pkgredis.MakePersistentCachePeersOfPersistentTaskInScheduler(42, "task1"),
 				).SetErr(errors.New("redis error"))
 			},
 			expectedErr: true,
@@ -840,7 +840,7 @@ func TestPeerManager_LoadAllByHostID(t *testing.T) {
 			},
 			mockRedis: func(mock redismock.ClientMock) {
 				mock.ExpectSMembers(
-					pkgredis.MakePersistentCachePeersOfPersistentCacheHostInScheduler(42, "host1"),
+					pkgredis.MakePersistentCachePeersOfPersistentHostInScheduler(42, "host1"),
 				).SetErr(errors.New("redis error"))
 			},
 			expectedPeers: nil,
@@ -853,10 +853,10 @@ func TestPeerManager_LoadAllByHostID(t *testing.T) {
 			},
 			mockRedis: func(mock redismock.ClientMock) {
 				mock.ExpectSMembers(
-					pkgredis.MakePersistentCachePeersOfPersistentCacheHostInScheduler(42, "host1"),
+					pkgredis.MakePersistentCachePeersOfPersistentHostInScheduler(42, "host1"),
 				).SetVal([]string{"peer1"})
 				mock.ExpectHGetAll(
-					pkgredis.MakePersistentCachePeerKeyForPersistentCacheTaskInScheduler(42, "peer1"),
+					pkgredis.MakePersistentCachePeerKeyForPersistentTaskInScheduler(42, "peer1"),
 				).SetErr(errors.New("redis hgetall error"))
 			},
 			expectedPeers: nil,
@@ -874,10 +874,10 @@ func TestPeerManager_LoadAllByHostID(t *testing.T) {
 				}
 
 				mock.ExpectSMembers(
-					pkgredis.MakePersistentCachePeersOfPersistentCacheHostInScheduler(42, "host1"),
+					pkgredis.MakePersistentCachePeersOfPersistentHostInScheduler(42, "host1"),
 				).SetVal([]string{"peer1"})
 				mock.ExpectHGetAll(
-					pkgredis.MakePersistentCachePeerKeyForPersistentCacheTaskInScheduler(42, "peer1"),
+					pkgredis.MakePersistentCachePeerKeyForPersistentTaskInScheduler(42, "peer1"),
 				).SetVal(map[string]string{
 					"id":                     "peer1",
 					"state":                  PeerStateSucceeded,
@@ -989,7 +989,7 @@ func TestPeerManager_LoadAllIDsByHostID(t *testing.T) {
 			},
 			mockRedis: func(mock redismock.ClientMock) {
 				mock.ExpectSMembers(
-					pkgredis.MakePersistentCachePeersOfPersistentCacheHostInScheduler(42, "host1"),
+					pkgredis.MakePersistentCachePeersOfPersistentHostInScheduler(42, "host1"),
 				).SetErr(errors.New("redis error"))
 			},
 			expectedIDs: nil,
@@ -1002,7 +1002,7 @@ func TestPeerManager_LoadAllIDsByHostID(t *testing.T) {
 			},
 			mockRedis: func(mock redismock.ClientMock) {
 				mock.ExpectSMembers(
-					pkgredis.MakePersistentCachePeersOfPersistentCacheHostInScheduler(42, "host1"),
+					pkgredis.MakePersistentCachePeersOfPersistentHostInScheduler(42, "host1"),
 				).SetVal([]string{"peer1", "peer2"})
 			},
 			expectedIDs: []string{"peer1", "peer2"},
@@ -1066,7 +1066,7 @@ func TestPeerManager_DeleteAllByHostID(t *testing.T) {
 			},
 			mockRedis: func(mock redismock.ClientMock) {
 				mock.ExpectSMembers(
-					pkgredis.MakePersistentCachePeersOfPersistentCacheHostInScheduler(42, "host1"),
+					pkgredis.MakePersistentCachePeersOfPersistentHostInScheduler(42, "host1"),
 				).SetErr(errors.New("redis error"))
 			},
 			expectedErr: true,

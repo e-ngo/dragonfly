@@ -1,5 +1,5 @@
 /*
- *     Copyright 2024 The Dragonfly Authors
+ *     Copyright 2025 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-//go:generate mockgen -destination task_manager_mock.go -source task_manager.go -package persistentcache
+//go:generate mockgen -destination task_manager_mock.go -source task_manager.go -package persistent
 
-package persistentcache
+package persistent
 
 import (
 	"context"
@@ -32,28 +32,28 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 )
 
-// TaskManager is the interface used for persistent cache task manager.
+// TaskManager is the interface used for persistent task manager.
 type TaskManager interface {
-	// Load returns persistent cache task by a key.
+	// Load returns persistent task by a key.
 	Load(context.Context, string) (*Task, bool)
 
-	// LoadCurrentReplicaCount returns current replica count of the persistent cache task.
+	// LoadCurrentReplicaCount returns current replica count of the persistent task.
 	LoadCurrentReplicaCount(context.Context, string) (uint64, error)
 
-	// LoadCurrentPersistentReplicaCount returns current persistent replica count of the persistent cache task.
+	// LoadCurrentPersistentReplicaCount returns current persistent replica count of the persistent task.
 	LoadCurrentPersistentReplicaCount(context.Context, string) (uint64, error)
 
-	// Store sets persistent cache task.
+	// Store sets persistent task.
 	Store(context.Context, *Task) error
 
-	// Delete deletes persistent cache task by a key.
+	// Delete deletes persistent task by a key.
 	Delete(context.Context, string) error
 
-	// LoadAll returns all persistent cache tasks.
+	// LoadAll returns all persistent tasks.
 	LoadAll(context.Context) ([]*Task, error)
 }
 
-// taskManager contains content for persistent cache task manager.
+// taskManager contains content for persistent task manager.
 type taskManager struct {
 	// Config is scheduler config.
 	config *config.Config
@@ -62,15 +62,15 @@ type taskManager struct {
 	rdb redis.UniversalClient
 }
 
-// New persistent cache task manager interface.
+// New persistent task manager interface.
 func newTaskManager(cfg *config.Config, rdb redis.UniversalClient) TaskManager {
 	return &taskManager{config: cfg, rdb: rdb}
 }
 
-// Load returns persistent cache task by a key.
+// Load returns persistent task by a key.
 func (t *taskManager) Load(ctx context.Context, taskID string) (*Task, bool) {
 	log := logger.WithTaskID(taskID)
-	rawTask, err := t.rdb.HGetAll(ctx, pkgredis.MakePersistentCacheTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, taskID)).Result()
+	rawTask, err := t.rdb.HGetAll(ctx, pkgredis.MakePersistentTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, taskID)).Result()
 	if err != nil {
 		log.Errorf("getting task failed from redis: %v", err)
 		return nil, false
@@ -140,19 +140,19 @@ func (t *taskManager) Load(ctx context.Context, taskID string) (*Task, bool) {
 	), true
 }
 
-// LoadCurrentReplicaCount returns current replica count of the persistent cache task.
+// LoadCurrentReplicaCount returns current replica count of the persistent task.
 func (t *taskManager) LoadCurrentReplicaCount(ctx context.Context, taskID string) (uint64, error) {
-	count, err := t.rdb.SCard(ctx, pkgredis.MakePersistentCachePeersOfPersistentCacheTaskInScheduler(t.config.Manager.SchedulerClusterID, taskID)).Result()
+	count, err := t.rdb.SCard(ctx, pkgredis.MakePersistentCachePeersOfPersistentTaskInScheduler(t.config.Manager.SchedulerClusterID, taskID)).Result()
 	return uint64(count), err
 }
 
-// LoadCurrentPersistentReplicaCount returns current persistent replica count of the persistent cache task.
+// LoadCurrentPersistentReplicaCount returns current persistent replica count of the persistent task.
 func (t *taskManager) LoadCurrentPersistentReplicaCount(ctx context.Context, taskID string) (uint64, error) {
-	count, err := t.rdb.SCard(ctx, pkgredis.MakePersistentPeersOfPersistentCacheTaskInScheduler(t.config.Manager.SchedulerClusterID, taskID)).Result()
+	count, err := t.rdb.SCard(ctx, pkgredis.MakePersistentPeersOfPersistentTaskInScheduler(t.config.Manager.SchedulerClusterID, taskID)).Result()
 	return uint64(count), err
 }
 
-// Store sets persistent cache task.
+// Store sets persistent task.
 func (t *taskManager) Store(ctx context.Context, task *Task) error {
 	// Calculate remaining TTL in seconds.
 	ttl := task.TTL - time.Since(task.CreatedAt)
@@ -202,7 +202,7 @@ return true
 
 	// Prepare keys.
 	keys := []string{
-		pkgredis.MakePersistentCacheTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, task.ID),
+		pkgredis.MakePersistentTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, task.ID),
 	}
 
 	// Prepare arguments.
@@ -231,9 +231,9 @@ return true
 	return nil
 }
 
-// Delete deletes persistent cache task by a key.
+// Delete deletes persistent task by a key.
 func (t *taskManager) Delete(ctx context.Context, taskID string) error {
-	_, err := t.rdb.Del(ctx, pkgredis.MakePersistentCacheTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, taskID)).Result()
+	_, err := t.rdb.Del(ctx, pkgredis.MakePersistentTaskKeyInScheduler(t.config.Manager.SchedulerClusterID, taskID)).Result()
 	return err
 }
 
@@ -250,7 +250,7 @@ func (t *taskManager) LoadAll(ctx context.Context) ([]*Task, error) {
 			err      error
 		)
 
-		// Example: If {prefix} is "scheduler:scheduler-clusters:1:persistent-cache-tasks:".
+		// Example: If {prefix} is "scheduler:scheduler-clusters:1:persistent-tasks:".
 		//
 		// Keys include:
 		// - "{prefix}{taskID}:persistent-cache-peers"
@@ -258,7 +258,7 @@ func (t *taskManager) LoadAll(ctx context.Context) ([]*Task, error) {
 		// - "{prefix}{taskID}"
 		//
 		// Purpose: Scan all keys starting with {prefix}.
-		prefix := fmt.Sprintf("%s:", pkgredis.MakePersistentCacheTasksInScheduler(t.config.Manager.SchedulerClusterID))
+		prefix := fmt.Sprintf("%s:", pkgredis.MakePersistentTasksInScheduler(t.config.Manager.SchedulerClusterID))
 		taskKeys, cursor, err = t.rdb.Scan(ctx, cursor, fmt.Sprintf("%s*", prefix), 10).Result()
 		if err != nil {
 			logger.Error("scan tasks failed")

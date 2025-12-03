@@ -1,5 +1,5 @@
 /*
- *     Copyright 2024 The Dragonfly Authors
+ *     Copyright 2025 The Dragonfly Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package persistentcache
+package persistent
 
 import (
 	"context"
@@ -60,48 +60,48 @@ const (
 	TaskEventFailed = "Failed"
 )
 
-// Task contains content for persistent cache task.
+// Task contains content for persistent task.
 type Task struct {
 	// ID is task id.
 	ID string
 
-	// Replica count of the persistent cache task. The persistent cache task will
+	// Replica count of the persistent task. The persistent task will
 	// not be deleted when dfdamon runs garbage collection. It only be deleted
 	// when the task is deleted by the user.
 	PersistentReplicaCount uint64
 
-	// Tag is used to distinguish different persistent cache tasks.
+	// Tag is used to distinguish different persistent tasks.
 	Tag string
 
-	// Application of persistent cache task.
+	// Application of persistent task.
 	Application string
 
-	// Persistet cache task piece length.
+	// Persistet task piece length.
 	PieceLength uint64
 
-	// ContentLength is persistent cache task total content length.
+	// ContentLength is persistent task total content length.
 	ContentLength uint64
 
 	// TotalPieceCount is total piece count.
 	TotalPieceCount uint32
 
-	// Persistent cache task state machine.
+	// Persistent task state machine.
 	FSM *fsm.FSM
 
-	// TTL is persistent cache task time to live.
+	// TTL is persistent task time to live.
 	TTL time.Duration
 
-	// CreatedAt is persistent cache task create time.
+	// CreatedAt is persistent task create time.
 	CreatedAt time.Time
 
-	// UpdatedAt is persistent cache task update time.
+	// UpdatedAt is persistent task update time.
 	UpdatedAt time.Time
 
-	// Persistent cache task log.
+	// Persistent task log.
 	Log *logger.SugaredLoggerOnWith
 }
 
-// New persistent cache task instance.
+// New persistent task instance.
 func NewTask(id, tag, application, state string, persistentReplicaCount, pieceLength, contentLength uint64,
 	totalPieceCount uint32, ttl time.Duration, createdAt, updatedAt time.Time,
 	log *logger.SugaredLoggerOnWith) *Task {
