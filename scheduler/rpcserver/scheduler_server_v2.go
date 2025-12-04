@@ -28,6 +28,7 @@ import (
 	"d7y.io/dragonfly/v2/scheduler/config"
 	"d7y.io/dragonfly/v2/scheduler/job"
 	"d7y.io/dragonfly/v2/scheduler/metrics"
+	"d7y.io/dragonfly/v2/scheduler/resource/persistent"
 	"d7y.io/dragonfly/v2/scheduler/resource/persistentcache"
 	"d7y.io/dragonfly/v2/scheduler/resource/standard"
 	"d7y.io/dragonfly/v2/scheduler/scheduling"
@@ -44,12 +45,13 @@ type schedulerServerV2 struct {
 func newSchedulerServerV2(
 	cfg *config.Config,
 	resource standard.Resource,
+	persistentResource persistent.Resource,
 	persistentCacheResource persistentcache.Resource,
 	scheduling scheduling.Scheduling,
 	job job.Job,
 	dynconfig config.DynconfigInterface,
 ) schedulerv2.SchedulerServer {
-	return &schedulerServerV2{service.NewV2(cfg, resource, persistentCacheResource, scheduling, job, internaljob.NewImage(), dynconfig)}
+	return &schedulerServerV2{service.NewV2(cfg, resource, persistentResource, persistentCacheResource, scheduling, job, internaljob.NewImage(), dynconfig)}
 }
 
 // AnnouncePeer announces peer to scheduler.
@@ -192,6 +194,113 @@ func (s *schedulerServerV2) StatCacheTask(ctx context.Context, req *schedulerv2.
 // TODO(fu220): Implement the following methods.
 // DeleteCacheTask releases cache task in scheduler.
 func (s *schedulerServerV2) DeleteCacheTask(ctx context.Context, req *schedulerv2.DeleteCacheTaskRequest) (*emptypb.Empty, error) {
+	return new(emptypb.Empty), nil
+}
+
+// AnnouncePersistentPeer announces persistent peer to scheduler.
+func (s *schedulerServerV2) AnnouncePersistentPeer(stream schedulerv2.Scheduler_AnnouncePersistentPeerServer) error {
+	// Collect AnnouncePersistentPeerCount metrics.
+	metrics.AnnouncePersistentPeerCount.Inc()
+	if err := s.service.AnnouncePersistentPeer(stream); err != nil {
+		// Collect AnnouncePersistentPeerFailureCount metrics.
+		metrics.AnnouncePersistentPeerFailureCount.Inc()
+		return err
+	}
+
+	return nil
+}
+
+// StatPersistentPeer checks information of persistent peer.
+func (s *schedulerServerV2) StatPersistentPeer(ctx context.Context, req *schedulerv2.StatPersistentPeerRequest) (*commonv2.PersistentPeer, error) {
+	// Collect StatPersistentPeerCount metrics.
+	metrics.StatPersistentPeerCount.Inc()
+	resp, err := s.service.StatPersistentPeer(ctx, req)
+	if err != nil {
+		// Collect StatPersistentPeerFailureCount metrics.
+		metrics.StatPersistentPeerFailureCount.Inc()
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// DeletePersistentPeer releases persistent peer in scheduler.
+func (s *schedulerServerV2) DeletePersistentPeer(ctx context.Context, req *schedulerv2.DeletePersistentPeerRequest) (*emptypb.Empty, error) {
+	// Collect DeletePersistentPeerCount metrics.
+	metrics.DeletePersistentPeerCount.Inc()
+	if err := s.service.DeletePersistentPeer(ctx, req); err != nil {
+		// Collect DeletePersistentPeerFailureCount metrics.
+		metrics.DeletePersistentPeerFailureCount.Inc()
+		return nil, err
+	}
+
+	return new(emptypb.Empty), nil
+}
+
+// UploadPersistentTaskStarted uploads the metadata of the persistent task started.
+func (s *schedulerServerV2) UploadPersistentTaskStarted(ctx context.Context, req *schedulerv2.UploadPersistentTaskStartedRequest) (*emptypb.Empty, error) {
+	// Collect UploadPersistentTaskStartedCount metrics.
+	metrics.UploadPersistentTaskStartedCount.Inc()
+	if err := s.service.UploadPersistentTaskStarted(ctx, req); err != nil {
+		// Collect UploadPersistentTaskStartedFailureCount metrics.
+		metrics.UploadPersistentTaskStartedFailureCount.Inc()
+		return nil, err
+	}
+
+	return new(emptypb.Empty), nil
+}
+
+// UploadPersistentTaskFinished uploads the metadata of the persistent task finished.
+func (s *schedulerServerV2) UploadPersistentTaskFinished(ctx context.Context, req *schedulerv2.UploadPersistentTaskFinishedRequest) (*commonv2.PersistentTask, error) {
+	// Collect UploadPersistentTaskFinishedCount metrics.
+	metrics.UploadPersistentTaskFinishedCount.Inc()
+	resp, err := s.service.UploadPersistentTaskFinished(ctx, req)
+	if err != nil {
+		// Collect UploadPersistentTaskFinishedFailureCount metrics.
+		metrics.UploadPersistentTaskFinishedFailureCount.Inc()
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// UploadPersistentTaskFailed uploads the metadata of the persistent task failed.
+func (s *schedulerServerV2) UploadPersistentTaskFailed(ctx context.Context, req *schedulerv2.UploadPersistentTaskFailedRequest) (*emptypb.Empty, error) {
+	// Collect UploadPersistentTaskFailedCount metrics.
+	metrics.UploadPersistentTaskFailedCount.Inc()
+	if err := s.service.UploadPersistentTaskFailed(ctx, req); err != nil {
+		// Collect UploadPersistentTaskFailedFailureCount metrics.
+		metrics.UploadPersistentTaskFailedFailureCount.Inc()
+		return nil, err
+	}
+
+	return new(emptypb.Empty), nil
+}
+
+// StatPersistentTask checks information of persistent task.
+func (s *schedulerServerV2) StatPersistentTask(ctx context.Context, req *schedulerv2.StatPersistentTaskRequest) (*commonv2.PersistentTask, error) {
+	// Collect StatPersistentTaskCount metrics.
+	metrics.StatPersistentTaskCount.Inc()
+	resp, err := s.service.StatPersistentTask(ctx, req)
+	if err != nil {
+		// Collect StatPersistentTaskFailureCount metrics.
+		metrics.StatPersistentTaskFailureCount.Inc()
+		return nil, err
+	}
+
+	return resp, nil
+}
+
+// DeletePersistentTask releases persistent task in scheduler.
+func (s *schedulerServerV2) DeletePersistentTask(ctx context.Context, req *schedulerv2.DeletePersistentTaskRequest) (*emptypb.Empty, error) {
+	// Collect DeletePersistentTaskCount metrics.
+	metrics.DeletePersistentTaskCount.Inc()
+	if err := s.service.DeletePersistentTask(ctx, req); err != nil {
+		// Collect DeletePersistentTaskFailureCount metrics.
+		metrics.DeletePersistentTaskFailureCount.Inc()
+		return nil, err
+	}
+
 	return new(emptypb.Empty), nil
 }
 
